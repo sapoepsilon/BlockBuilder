@@ -1,5 +1,8 @@
-<!-- src/lib/components/ControlPanel.svelte -->
+<!-- lib/components/features/canvas/ControlPanel.svelte -->
 <script lang="ts">
+  import { canvasStore } from '$lib/stores/canvas';
+  import BlockPallete from "./BlockPallete.svelte";
+  
   let { mouseX, mouseY, scale, offsetX, offsetY } = $props();
   
   let state = $state({
@@ -26,17 +29,35 @@
   function stopDrag() {
     state.isDragging = false;
   }
+
+  function resetCanvas() {
+    canvasStore.update(state => ({
+      ...state,
+      offsetX: 0,
+      offsetY: 0,
+      scale: 1
+    }));
+  }
 </script>
 
 <div
-  class="fixed flex flex-col gap-2 rounded-lg bg-white/90 p-4 shadow-lg backdrop-blur-sm"
+  class="fixed flex flex-col gap-4 rounded-lg bg-white/90 p-4 shadow-lg backdrop-blur-sm"
   style="left: {state.panelX}px; top: {state.panelY}px; user-select: none;"
   onmousedown={startDrag}
   onmousemove={onDrag}
   onmouseup={stopDrag}
   onmouseleave={stopDrag}
 >
-  <div class="text-sm font-semibold text-gray-800">Canvas Metrics</div>
+  <div class="flex items-center justify-between">
+    <div class="text-sm font-semibold text-gray-800">Canvas Metrics</div>
+    <button 
+      class="rounded bg-blue-500 px-2 py-1 text-xs text-white hover:bg-blue-600"
+      onclick={resetCanvas}
+    >
+      Reset View
+    </button>
+  </div>
+  
   <div class="space-y-1 text-sm text-gray-600">
     <div class="flex justify-between gap-4">
       <span>Mouse Position:</span>
@@ -51,4 +72,6 @@
       <span class="font-mono">{(scale * 100).toFixed(0)}%</span>
     </div>
   </div>
+  <div class="h-px bg-gray-200" />
+  <BlockPallete />
 </div>

@@ -1,3 +1,5 @@
+import type { Block } from "$lib/types/canvas";
+
 export function drawGrid(
     ctx: CanvasRenderingContext2D, 
     canvas: HTMLCanvasElement,
@@ -32,3 +34,12 @@ export function drawGrid(
     
     ctx.stroke();
   }
+
+  export function drawBlock(
+    ctx: CanvasRenderingContext2D,
+    block: Block
+  ) {
+    ctx.fillStyle = '#4299e1'; // blue-500
+    ctx.fillRect(block.x, block.y, block.width, block.height);
+  }
+  
