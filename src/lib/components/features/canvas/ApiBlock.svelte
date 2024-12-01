@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Block, ApiBlockConfig } from '$lib/types/canvas';
   import { executeApiCall } from '$lib/services/api';
   import { Button } from '$lib/components/ui/button';
   import { Sheet, SheetHeader } from '$lib/components/ui/sheet';
@@ -11,6 +10,9 @@
   import { X } from 'lucide-svelte';
   import { Loader2 } from 'lucide-svelte';
   import ApiConfigForm from './ApiConfigForm.svelte';
+  import { apiStore } from '$lib/stores/api';
+		import type { Block } from '$lib/types/block';
+	import type { ApiBlockConfig } from '$lib/types/apiBlockConfig';
 
   let { 
     block, 
@@ -27,6 +29,12 @@
   let isExecuting = $state(false);
   let response = $state<any>(null);
   let error = $state<string | null>(null);
+  let savedApis = $state<Array<any>>([]);
+
+  // Subscribe to the API store
+  apiStore.subscribe(apis => {
+    savedApis = apis;
+  });
 
   async function handleExecute() {
     isExecuting = true;
@@ -50,6 +58,17 @@
   }
 
   function handleConfigUpdate(newConfig: ApiBlockConfig) {
+    // Save to API store if it's a new configuration
+    if (newConfig.name) {
+      apiStore.add({
+        name: newConfig.name,
+        endpoint: newConfig.url,
+        method: newConfig.method,
+        headers: newConfig.headers,
+        body: newConfig.body
+      });
+    }
+    
     onUpdate({
       ...block,
       config: newConfig

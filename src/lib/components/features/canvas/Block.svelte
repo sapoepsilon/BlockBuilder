@@ -1,6 +1,7 @@
 <!-- lib/components/features/canvas/Block.svelte -->
 <script lang="ts">
-    import type { Block } from '$lib/types/canvas';
+		import type { Block } from "$lib/types/block";
+
     
     let { id, x, y, width, height, onDragStart } = $props<Block & {
       onDragStart: (e: DragEvent) => void;

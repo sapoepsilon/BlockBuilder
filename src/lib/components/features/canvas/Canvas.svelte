@@ -5,8 +5,9 @@
   import { drawGrid } from '$lib/utils/canvas/draw';
   import { handleWheel } from '$lib/utils/canvas/events';
   import { createBlock, updateBlockPosition, isPointInBlock } from '$lib/utils/canvas/blocks';
-  import type { CanvasProps, Point, Block } from '$lib/types/canvas';
+  import type { CanvasProps, Point } from '$lib/types/canvas';
   import ApiBlock from './ApiBlock.svelte';
+	import type { Block } from '$lib/types/block';
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
