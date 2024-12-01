@@ -21,5 +21,6 @@ export interface ApiBlockConfig {
       apiKeyIn?: 'header' | 'query';
     };
     responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
+    requestBody?: any;
     validateStatus?: (status: number) => boolean;
   }

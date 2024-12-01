@@ -95,7 +95,7 @@
         <Button
           variant="secondary"
           size="sm"
-          onclick={() => showConfigModal = true}
+          on:click={() => showConfigModal = true}
         >
           Configure
         </Button>
@@ -103,7 +103,7 @@
           variant="default"
           size="sm"
           disabled={isExecuting}
-          onclick={handleExecute}
+          on:click={handleExecute}
         >
           {#if isExecuting}
             <Loader2 class="w-4 h-4 mr-2 animate-spin" />
@@ -116,7 +116,7 @@
           variant="ghost"
           size="icon"
           class="h-6 w-6"
-          onclick={handleCloseClick}
+          on:click={handleCloseClick}
         >
           <X class="h-4 w-4" />
         </Button>
