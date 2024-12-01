@@ -6,9 +6,12 @@
   import { Sheet, SheetHeader } from '$lib/components/ui/sheet';
   import SheetContent from '$lib/components/ui/sheet/sheet-content.svelte';
   import SheetTitle from '$lib/components/ui/sheet/sheet-title.svelte';
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '$lib/components/ui/dialog';
+  import { ResizableHandle } from '$lib/components/ui/resizable';
   import { X } from 'lucide-svelte';
-	import ApiConfigForm from './ApiConfigForm.svelte';
-  
+  import { Loader2 } from 'lucide-svelte';
+  import ApiConfigForm from './ApiConfigForm.svelte';
+
   let { 
     block, 
     onUpdate, 
@@ -18,24 +21,34 @@
     onUpdate: (block: Block) => void;
     onRemove: () => void;
   }>();
-  
+
   let showConfigModal = $state(false);
+  let showResponseDialog = $state(false);
   let isExecuting = $state(false);
   let response = $state<any>(null);
   let error = $state<string | null>(null);
-  
+
   async function handleExecute() {
     isExecuting = true;
     error = null;
     try {
+      console.log(`block.config`, block.config);
       response = await executeApiCall(block.config);
+      console.log(`response`, JSON.stringify(response));
+      showResponseDialog = true;
     } catch (err) {
-      error = err instanceof Error ? err.message : 'An error occurred';
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      if (errorMessage.toLowerCase().includes('cors') || errorMessage.includes('cross-origin')) {
+        error = "CORS Error: Unable to access the API due to browser security restrictions. We're working on fixing this issue. In the meantime, you can try using a CORS-enabled API or contact us for support.";
+      } else {
+        error = errorMessage;
+      }
+      showResponseDialog = true;
     } finally {
       isExecuting = false;
     }
   }
-  
+
   function handleConfigUpdate(newConfig: ApiBlockConfig) {
     onUpdate({
       ...block,
@@ -43,77 +56,94 @@
     });
     showConfigModal = false;
   }
-  
+
   function handleCloseClick(event: MouseEvent) {
     // Prevent the click from triggering canvas events
     event.preventDefault();
     event.stopPropagation();
     onRemove();
   }
-  </script>
-  
-  <div
-    class="absolute p-4 bg-white rounded-lg shadow-lg border-2 border-blue-500 min-w-[200px] min-h-[150px]"
-    style="left: {block.x}px; top: {block.y}px; width: {block.width}px; height: {block.height}px;"
-  >
-    <div class="flex flex-col h-full">
-      <div class="flex justify-between items-center mb-2">
-        <span class="font-bold text-sm">{block.config.method} Request</span>
-        <div class="flex gap-2 items-center">
-          <Button
-            variant="secondary"
-            size="sm"
-            onclick={() => showConfigModal = true}
-          >
-            Configure
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            disabled={isExecuting}
-            onclick={handleExecute}
-          >
+</script>
+
+<div
+  class="absolute p-4 bg-white rounded-lg shadow-lg border-2 border-blue-500 min-w-[200px] min-h-[150px]"
+  style="left: {block.x}px; top: {block.y}px; width: {block.width}px; height: {block.height}px;"
+>
+  <div class="flex flex-col h-full">
+    <div class="flex justify-between items-center mb-2">
+      <span class="font-bold text-sm">{block.config.method} Request</span>
+      <div class="flex gap-2 items-center">
+        <Button
+          variant="secondary"
+          size="sm"
+          onclick={() => showConfigModal = true}
+        >
+          Configure
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          disabled={isExecuting}
+          onclick={handleExecute}
+        >
+          {#if isExecuting}
+            <Loader2 class="w-4 h-4 mr-2 animate-spin" />
+            Executing...
+          {:else}
             Execute
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-6 w-6"
-            onclick={handleCloseClick}
-          >
-            <X class="h-4 w-4" />
-          </Button>
-        </div>
+          {/if}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-6 w-6"
+          onclick={handleCloseClick}
+        >
+          <X class="h-4 w-4" />
+        </Button>
       </div>
-  
-      <div class="text-xs truncate mb-2">
-        {block.config.url}
-      </div>
-  
-      {#if error}
-        <div class="text-red-500 text-xs mt-2">
-          {error}
-        </div>
-      {/if}
-  
-      {#if response}
-        <div class="flex-1 overflow-auto text-xs">
-          <pre>{JSON.stringify(response, null, 2)}</pre>
-        </div>
-      {/if}
     </div>
+
+    <div class="text-xs truncate mb-2">
+      {block.config.url}
+    </div>
+
+    {#if error}
+      <div class="text-red-500 text-xs mt-2">
+        {error}
+      </div>
+    {/if}
   </div>
-  
-  {#if showConfigModal}
-    <Sheet open={showConfigModal} onOpenChange={(open) => showConfigModal = open}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>API Configuration</SheetTitle>
-        </SheetHeader>
-        <ApiConfigForm
-          config={block.config}
-          onSubmit={handleConfigUpdate}
-        />
-      </SheetContent>
-    </Sheet>
-  {/if}
+</div>
+
+{#if showConfigModal}
+  <Sheet open={showConfigModal} onOpenChange={(open) => showConfigModal = open}>
+    <SheetContent side="right">
+      <SheetHeader>
+        <SheetTitle>API Configuration</SheetTitle>
+      </SheetHeader>
+      <ApiConfigForm
+        config={block.config}
+        onSubmit={handleConfigUpdate}
+      />
+    </SheetContent>
+  </Sheet>
+{/if}
+
+<Dialog bind:open={showResponseDialog}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>{error ? 'Error' : 'API Response'}</DialogTitle>
+    </DialogHeader>
+    {#if error}
+      <div class="p-4 bg-destructive/10 text-destructive rounded-md">
+        <p class="mb-2 font-semibold">Error Message:</p>
+        <p class="text-sm">{error}</p>
+      </div>
+    {:else if response}
+      <div class="p-4 bg-muted rounded-md overflow-auto max-h-[60vh]">
+        <pre class="whitespace-pre-wrap break-words">{JSON.stringify(response, null, 2)}</pre>
+      </div>
+    {/if}
+  </DialogContent>
+</Dialog>
