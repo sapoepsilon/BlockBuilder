@@ -1,6 +1,20 @@
 // lib/stores/canvas.ts
 import { writable } from 'svelte/store';
-import type { CanvasState } from '$lib/types/canvas';
+import type { Block } from '$lib/types/canvas';
+
+export interface CanvasState {
+  isDragging: boolean;
+  lastX: number;
+  lastY: number;
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+  mouseX: number;
+  mouseY: number;
+  blocks: Block[];
+  selectedBlockId: string | null;
+  draggingBlock: boolean;
+}
 
 export const canvasStore = writable<CanvasState>({
   isDragging: false,

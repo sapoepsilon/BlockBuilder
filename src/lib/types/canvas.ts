@@ -2,14 +2,24 @@ export interface Point {
     x: number;
     y: number;
   }
-  
-// lib/types/canvas.ts
+
+export interface ApiBlockConfig {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  url: string;
+  headers: Record<string, string>;
+  bodyParams?: Record<string, any>;
+  queryParams?: Record<string, any>;
+  responseMapping?: Record<string, string>;
+}
+
 export interface Block {
   id: string;
   x: number;
   y: number;
   width: number;
   height: number;
+  type: 'api';
+  config: ApiBlockConfig;
 }
 
 export interface CanvasState {
