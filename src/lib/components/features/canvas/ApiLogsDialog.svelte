@@ -92,40 +92,38 @@
         </div>
       </div>
 
-      <Select.Root bind:value={selectedFilter}>
-        <Select.Trigger class="w-[150px]">
-          <Filter class="mr-2 h-4 w-4" />
-          <Select.Value placeholder="Select filter" />
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Item value={{ value: "all", label: "All" }}>
-            All
-          </Select.Item>
-          <Select.Item value={{ value: "error", label: "Error" }}>
-            Error
-          </Select.Item>
-          <Select.Item value={{ value: "success", label: "Success" }}>
-            Success
-          </Select.Item>
-          <Select.Item value={{ value: "info", label: "Info" }}>
-            Info
-          </Select.Item>
-        </Select.Content>
-      </Select.Root>
+      <Select.Root
+      selected={selectedFilter}
+      onSelectedChange={(selected) => {
+        if (selected) filterType = selected.value;
+      }}
+    >
+      <Select.Trigger class="w-32">
+        <Filter class="mr-2 h-4 w-4" />
+        <Select.Value placeholder="Filter" />
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Item value="all" label="All Logs" />
+        <Select.Item value="error" label="Errors" />
+        <Select.Item value="success" label="Success" />
+        <Select.Item value="info" label="Info" />
+      </Select.Content>
+    </Select.Root>
 
-      <Select.Root bind:value={selectedSort}>
-        <Select.Trigger class="w-[150px]">
-          <Select.Value placeholder="Sort order" />
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Item value={{ value: "newest", label: "Newest First" }}>
-            Newest First
-          </Select.Item>
-          <Select.Item value={{ value: "oldest", label: "Oldest First" }}>
-            Oldest First
-          </Select.Item>
-        </Select.Content>
-      </Select.Root>
+    <Select.Root
+      selected={selectedSort}
+      onSelectedChange={(selected) => {
+        if (selected) sortOrder = selected.value;
+      }}
+    >
+      <Select.Trigger class="w-32">
+        <Select.Value placeholder="Sort" />
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Item value="newest" label="Newest First" />
+        <Select.Item value="oldest" label="Oldest First" />
+      </Select.Content>
+    </Select.Root>
 
       <div class="flex gap-2">
         <Button variant="outline" on:click={downloadLogs}>

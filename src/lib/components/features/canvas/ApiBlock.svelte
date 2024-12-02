@@ -94,8 +94,8 @@
 </script>
 
 <div
-  class="absolute p-4 bg-white rounded-lg shadow-lg border-2 border-blue-500 min-w-[200px] min-h-[150px]"
-  style="left: {block.x}px; top: {block.y}px; width: {block.width}px; height: {block.height}px;"
+  class="absolute p-4 bg-white rounded-lg shadow-lg border-2 border-blue-500 w-auto h-auto"
+  style="left: {block.x}px; top: {block.y}px;"
 >
   <div class="flex flex-col h-full">
     <div class="flex justify-between items-center mb-2">
