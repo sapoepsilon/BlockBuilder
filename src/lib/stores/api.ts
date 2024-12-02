@@ -22,6 +22,8 @@ export interface ApiConfig {
         apiKey?: string;
         apiKeyName?: string;
         apiKeyIn?: 'header' | 'query';
+        key?: string;
+        value?: string;
     };
     responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
     validateStatus?: (status: number) => boolean;
@@ -42,7 +44,22 @@ function createApiStore() {
     return {
         subscribe,
         
-        // Add a new API
+        /**
+         * Adds a new API configuration to the store
+         * @param api - The API configuration to add (without id, createdAt, and updatedAt)
+         * @remarks
+         * Default values are automatically set for:
+         * - timeout: 30000ms
+         * - retryConfig: { maxRetries: 3, retryDelay: 1000 }
+         * - authentication: { type: 'none' }
+         * - responseType: 'json'
+         * - validateStatus: accepts 200-299 status codes
+         * 
+         * The method automatically:
+         * - Generates a unique UUID for the API
+         * - Sets createdAt timestamp
+         * - Persists to localStorage in browser environment
+         */
         add: (api: Omit<ApiConfig, 'id' | 'createdAt' | 'updatedAt'>) => {
             update(apis => {
                 const newApi: ApiConfig = {
@@ -64,7 +81,16 @@ function createApiStore() {
             });
         },
 
-        // Update an existing API
+        /**
+         * Updates an existing API configuration in the store
+         * @param id - The unique identifier of the API to update
+         * @param updates - Partial API configuration containing the fields to update
+         *                 (excluding id, createdAt, and updatedAt which are managed internally)
+         * @remarks
+         * - The method automatically updates the 'updatedAt' timestamp
+         * - Changes are persisted to localStorage if running in browser environment
+         * - If the API with the given id doesn't exist, no changes are made
+         */
         update: (id: string, updates: Partial<Omit<ApiConfig, 'id' | 'createdAt' | 'updatedAt'>>) => {
             update(apis => {
                 const updatedApis = apis.map(api => 

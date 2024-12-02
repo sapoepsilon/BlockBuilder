@@ -57,17 +57,17 @@
         type="text"
         placeholder="API Key Name"
         class="px-4"
-        bind:value={formData.authentication.apiKeyName}
+        bind:value={formData.authentication.key}
         on:input={updateCurlCommand}
       />
       <Input
         type="text"
         placeholder="API Key Value"
-        bind:value={formData.authentication.apiKey}
+        bind:value={formData.authentication.value}
         on:input={updateCurlCommand}
       />
       <select
-        bind:value={formData.authentication.apiKeyIn}
+        bind:value={formData.authentication.in}
         class="w-full p-2 border rounded"
         on:change={updateCurlCommand}
       >

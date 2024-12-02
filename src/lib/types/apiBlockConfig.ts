@@ -1,4 +1,5 @@
 export interface ApiBlockConfig {
+    blockId?: string;  // Optional because it will be added by ApiBlock component
     name?: string;
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     url: string;
@@ -23,4 +24,4 @@ export interface ApiBlockConfig {
     responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
     requestBody?: any;
     validateStatus?: (status: number) => boolean;
-  }
+}

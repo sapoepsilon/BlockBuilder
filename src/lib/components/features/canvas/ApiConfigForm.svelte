@@ -1,4 +1,4 @@
-<!-- lib/components/features/canvas/ApiConfigForm.svelte -->
+<!-- ApiConfigForm.svelte -->
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -8,10 +8,10 @@
   import type { ApiBlockConfig } from '$lib/types/apiBlockConfig';
   import AuthenticationForm from './api-form/AuthenticationForm.svelte';
   import HeadersForm from './api-form/HeadersForm.svelte';
-
   import AdvancedOptionsForm from './api-form/AdvancedOptionsForm.svelte';
   import CurlCommandDisplay from './api-form/CurlCommandDisplay.svelte';
-	import QueryParamsForm from './api-form/QueryParamsForm.svelte';
+  import QueryParamsForm from './api-form/QueryParamsForm.svelte';
+  import { onMount } from 'svelte';
 
   let { config, onSubmit } = $props<{
     config: ApiBlockConfig;
@@ -22,8 +22,18 @@
     ...config,
     timeout: config.timeout || 30000,
     retryConfig: config.retryConfig || { maxRetries: 3, retryDelay: 1000 },
-    authentication: config.authentication || { type: 'none' },
-    responseType: config.responseType || 'json'
+    authentication: {
+      type: config.authentication?.type || 'none',
+      username: config.authentication?.username || '',
+      password: config.authentication?.password || '',
+      token: config.authentication?.token || '',
+      in: config.authentication?.in || 'header'
+    },
+    responseType: config.responseType || 'json',
+    body: config.body || '',
+    requestBody: config.body ? JSON.parse(config.body) : undefined,
+    headers: config.headers || {},
+    queryParams: config.queryParams || {}
   });
 
   let isSubmitting = $state(false);
@@ -31,15 +41,17 @@
   let showAdvanced = $state(false);
   let curlCommand = $state('');
   
-  // Subscribe to the API store
-  apiStore.subscribe(apis => {
-    savedApis = apis;
+  onMount(() => {
+    const unsubscribe = apiStore.subscribe(apis => {
+      savedApis = apis;
+    });
+
+    return () => unsubscribe();
   });
 
   function updateCurlCommand() {
-    // Convert ApiBlockConfig to ApiConfig format
     const apiConfig: ApiConfig = {
-      id: crypto.randomUUID(), // Temporary ID for cURL generation
+      id: crypto.randomUUID(),
       name: formData.name || 'Temporary Config',
       endpoint: formData.url,
       method: formData.method,
@@ -61,28 +73,62 @@
     const select = event.target as HTMLSelectElement;
     const selectedApi = savedApis.find(api => api.id === select.value);
     
-    if (selectedApi) {
+    if (!selectedApi) return;
+
+    try {
+      const parsedBody = selectedApi.body ? JSON.parse(selectedApi.body) : undefined;
+      
       formData = {
-        ...formData,
         name: selectedApi.name,
         url: selectedApi.endpoint,
         method: selectedApi.method,
         headers: selectedApi.headers || {},
         body: selectedApi.body || '',
-        authentication: selectedApi.authentication,
-        timeout: selectedApi.timeout,
-        retryConfig: selectedApi.retryConfig,
-        responseType: selectedApi.responseType
+        requestBody: parsedBody,
+        timeout: selectedApi.timeout || 30000,
+        retryConfig: {
+          maxRetries: selectedApi.retryConfig?.maxRetries ?? 3,
+          retryDelay: selectedApi.retryConfig?.retryDelay ?? 1000
+        },
+        authentication: {
+          type: selectedApi.authentication?.type || 'none',
+          username: selectedApi.authentication?.username || '',
+          password: selectedApi.authentication?.password || '',
+          token: selectedApi.authentication?.token || ''
+        },
+        responseType: selectedApi.responseType || 'json',
+        queryParams: selectedApi.queryParams || {}
       };
+      
       updateCurlCommand();
+    } catch (error) {
+      console.error('Error parsing saved API body:', error);
     }
   }
   
-  async function handleSubmit(event: Event) {
-    event.preventDefault();
+  async function handleSubmit() {
     isSubmitting = true;
     try {
-      await onSubmit(formData);
+      const apiConfig: ApiConfig = {
+        id: crypto.randomUUID(),
+        name: formData.name || 'Untitled API',
+        endpoint: formData.url,
+        method: formData.method,
+        headers: formData.headers,
+        body: formData.body,
+        queryParams: formData.queryParams,
+        timeout: formData.timeout,
+        retryConfig: formData.retryConfig,
+        authentication: formData.authentication,
+        responseType: formData.responseType,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+
+      await apiStore.add(apiConfig);
+      onSubmit(formData);
+    } catch (error) {
+      console.error('Error saving API config:', error);
     } finally {
       isSubmitting = false;
     }
@@ -148,8 +194,11 @@
     />
   </div>
 
-  <QueryParamsForm {formData} {updateCurlCommand} />
-  <HeadersForm {formData} {updateCurlCommand} />
+  <QueryParamsForm 
+    {formData} 
+    {updateCurlCommand} 
+  />
+    <HeadersForm {formData} {updateCurlCommand} />
   <AuthenticationForm {formData} {authType} {updateCurlCommand} />
 
   <Button

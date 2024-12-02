@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { executeApiCall } from '$lib/services/api';
+  import { getApiLogs } from '$lib/services/api';
   import { Button } from '$lib/components/ui/button';
   import { Sheet, SheetHeader } from '$lib/components/ui/sheet';
   import SheetContent from '$lib/components/ui/sheet/sheet-content.svelte';
@@ -10,6 +11,7 @@
   import { X } from 'lucide-svelte';
   import { Loader2 } from 'lucide-svelte';
   import ApiConfigForm from './ApiConfigForm.svelte';
+  import ApiLogsDialog from "./ApiLogsDialog.svelte";
   import { apiStore } from '$lib/stores/api';
 		import type { Block } from '$lib/types/block';
 	import type { ApiBlockConfig } from '$lib/types/apiBlockConfig';
@@ -26,10 +28,12 @@
 
   let showConfigModal = $state(false);
   let showResponseDialog = $state(false);
+  let showLogsDialog = $state(false);
   let isExecuting = $state(false);
   let response = $state<any>(null);
   let error = $state<string | null>(null);
   let savedApis = $state<Array<any>>([]);
+  let apiLogs = $state<string[]>([]);
 
   // Subscribe to the API store
   apiStore.subscribe(apis => {
@@ -41,7 +45,12 @@
     error = null;
     try {
       console.log(`block.config`, block.config);
-      response = await executeApiCall(block.config);
+      // Add blockId to the config
+      const configWithId = {
+        ...block.config,
+        blockId: block.id
+      };
+      response = await executeApiCall(configWithId);
       console.log(`response`, JSON.stringify(response));
       showResponseDialog = true;
     } catch (err) {
@@ -113,6 +122,16 @@
           {/if}
         </Button>
         <Button
+          variant="outline"
+          size="sm"
+          on:click={() => {
+            apiLogs = getApiLogs(block.id);
+            showLogsDialog = true;
+          }}
+        >
+          Logs
+        </Button>
+        <Button
           variant="ghost"
           size="icon"
           class="h-6 w-6"
@@ -166,3 +185,5 @@
     {/if}
   </DialogContent>
 </Dialog>
+
+<ApiLogsDialog bind:open={showLogsDialog} bind:apiLogs={apiLogs} />
