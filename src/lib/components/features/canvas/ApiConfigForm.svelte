@@ -12,6 +12,8 @@
   import CurlCommandDisplay from './api-form/CurlCommandDisplay.svelte';
   import QueryParamsForm from './api-form/QueryParamsForm.svelte';
   import { onMount } from 'svelte';
+  import SavedApisList from './SavedApisList.svelte';
+  import { Collapsible } from '$lib/components/ui/collapsible';
 
   let { config, onSubmit } = $props<{
     config: ApiBlockConfig;
@@ -40,6 +42,10 @@
   let savedApis = $state<ApiConfig[]>([]);
   let showAdvanced = $state(false);
   let curlCommand = $state('');
+  let selectedApiId = $state<string>('');
+  let isEditing = $state(false);
+  let selectedApisToDelete = $state<string[]>([]);
+  let isOpen = $state(false);
   
   onMount(() => {
     const unsubscribe = apiStore.subscribe(apis => {
@@ -71,7 +77,8 @@
 
   function loadSavedApi(event: Event) {
     const select = event.target as HTMLSelectElement;
-    const selectedApi = savedApis.find(api => api.id === select.value);
+    selectedApiId = select.value;
+    const selectedApi = savedApis.find(api => api.id === selectedApiId);
     
     if (!selectedApi) return;
 
@@ -105,12 +112,11 @@
       console.error('Error parsing saved API body:', error);
     }
   }
-  
+
   async function handleSubmit() {
     isSubmitting = true;
     try {
-      const apiConfig: ApiConfig = {
-        id: crypto.randomUUID(),
+      const apiConfig: Omit<ApiConfig, 'id' | 'createdAt' | 'updatedAt'> = {
         name: formData.name || 'Untitled API',
         endpoint: formData.url,
         method: formData.method,
@@ -120,17 +126,53 @@
         timeout: formData.timeout,
         retryConfig: formData.retryConfig,
         authentication: formData.authentication,
-        responseType: formData.responseType,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+        responseType: formData.responseType
       };
 
-      await apiStore.add(apiConfig);
+      if (isEditing && selectedApiId) {
+        await apiStore.update(selectedApiId, apiConfig);
+        isEditing = false;
+      } else {
+        await apiStore.add(apiConfig);
+      }
+      selectedApiId = '';
       onSubmit(formData);
     } catch (error) {
       console.error('Error saving API config:', error);
     } finally {
       isSubmitting = false;
+    }
+  }
+
+  async function handleDelete(apiId: string) {
+    if (confirm('Are you sure you want to delete this API configuration?')) {
+      await apiStore.remove(apiId);
+      if (selectedApiId === apiId) {
+        selectedApiId = '';
+      }
+      selectedApisToDelete = selectedApisToDelete.filter(id => id !== apiId);
+    }
+  }
+
+  async function handleDeleteSelected() {
+    if (selectedApisToDelete.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedApisToDelete.length} API configuration(s)?`)) {
+      for (const apiId of selectedApisToDelete) {
+        await apiStore.remove(apiId);
+        if (selectedApiId === apiId) {
+          selectedApiId = '';
+        }
+      }
+      selectedApisToDelete = [];
+    }
+  }
+
+  function toggleApiSelection(apiId: string) {
+    if (selectedApisToDelete.includes(apiId)) {
+      selectedApisToDelete = selectedApisToDelete.filter(id => id !== apiId);
+    } else {
+      selectedApisToDelete = [...selectedApisToDelete, apiId];
     }
   }
 
@@ -148,18 +190,19 @@
   on:submit|preventDefault={handleSubmit}
 >
   {#if savedApis.length > 0}
-    <div class="space-y-2">
-      <label class="block text-sm font-medium">Load Saved API</label>
-      <select
-        class="w-full p-2 border rounded"
-        on:change={loadSavedApi}
-      >
-        <option value="">Select a saved API...</option>
-        {#each savedApis as api}
-          <option value={api.id}>{api.name}</option>
-        {/each}
-      </select>
-    </div>
+    <SavedApisList
+      {savedApis}
+      onLoadApi={(apiId) => {
+        selectedApiId = apiId;
+        loadSavedApi({ target: { value: apiId } } as any);
+      }}
+      onEditApi={(apiId) => {
+        isEditing = true;
+        selectedApiId = apiId;
+        loadSavedApi({ target: { value: apiId } } as any);
+      }}
+      onDeleteApi={handleDelete}
+    />
   {/if}
 
   <div class="space-y-2 px-2">

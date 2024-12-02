@@ -155,7 +155,7 @@
 </div>
 
 {#if showConfigModal}
-  <Sheet  open={showConfigModal} onOpenChange={(open) => showConfigModal = open}>
+  <Sheet bind:open={showConfigModal}>
     <SheetContent class="!w-[40%] !max-w-[90%]" side="right">
       <SheetHeader>
         <SheetTitle>API Configuration</SheetTitle>
