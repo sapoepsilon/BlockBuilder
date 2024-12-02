@@ -46,6 +46,7 @@
   let isEditing = $state(false);
   let selectedApisToDelete = $state<string[]>([]);
   let isOpen = $state(false);
+  let authType = $state(config.authentication?.type || 'none');
   
   onMount(() => {
     const unsubscribe = apiStore.subscribe(apis => {
@@ -101,11 +102,17 @@
           type: selectedApi.authentication?.type || 'none',
           username: selectedApi.authentication?.username || '',
           password: selectedApi.authentication?.password || '',
-          token: selectedApi.authentication?.token || ''
+          token: selectedApi.authentication?.token || '',
+          key: selectedApi.authentication?.key || '',
+          value: selectedApi.authentication?.value || '',
+          in: selectedApi.authentication?.in || 'header'
         },
         responseType: selectedApi.responseType || 'json',
         queryParams: selectedApi.queryParams || {}
       };
+      
+      // Update authType to match the loaded configuration
+      authType = selectedApi.authentication?.type || 'none';
       
       updateCurlCommand();
     } catch (error) {
@@ -175,8 +182,6 @@
       selectedApisToDelete = [...selectedApisToDelete, apiId];
     }
   }
-
-  let authType = $derived(formData.authentication?.type ?? 'none');
 
   $effect(() => {
     if (formData) {

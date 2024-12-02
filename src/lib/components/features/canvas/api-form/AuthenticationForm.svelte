@@ -13,6 +13,8 @@
     if (!formData.authentication) {
       formData.authentication = { type: 'none' };
     }
+    // Keep authType in sync with formData.authentication.type
+    formData.authentication.type = authType;
   });
 </script>
 

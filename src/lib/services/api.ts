@@ -95,9 +95,34 @@ export async function executeApiCall(config: ApiBlockConfig) {
             // Prepare headers
             const headers = new Headers(config.headers || {});
             
-            if (config.authentication?.type === 'bearer') {
-                addLog('Adding bearer token authentication');
-                headers.set('Authorization', `Bearer ${config.authentication.token}`);
+            // Handle authentication
+            if (config.authentication) {
+                switch (config.authentication.type) {
+                    case 'basic':
+                        if (config.authentication.username && config.authentication.password) {
+                            const credentials = btoa(`${config.authentication.username}:${config.authentication.password}`);
+                            headers.set('Authorization', `Basic ${credentials}`);
+                            addLog('Adding basic authentication');
+                        }
+                        break;
+                    case 'bearer':
+                        if (config.authentication.token) {
+                            headers.set('Authorization', `Bearer ${config.authentication.token}`);
+                            addLog('Adding bearer token authentication');
+                        }
+                        break;
+                    case 'api-key':
+                        if (config.authentication.key && config.authentication.value) {
+                            if (config.authentication.in === 'header') {
+                                headers.set(config.authentication.key, config.authentication.value);
+                                addLog('Adding API key authentication in header');
+                            } else if (config.authentication.in === 'query') {
+                                url.searchParams.append(config.authentication.key, config.authentication.value);
+                                addLog('Adding API key authentication in query parameters');
+                            }
+                        }
+                        break;
+                }
             }
 
             // Prepare request configuration
