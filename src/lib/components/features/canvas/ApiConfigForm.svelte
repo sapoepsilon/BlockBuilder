@@ -14,11 +14,14 @@
   import { onMount } from 'svelte';
   import SavedApisList from './SavedApisList.svelte';
   import { Collapsible } from '$lib/components/ui/collapsible';
+  import { getContext } from 'svelte';
 
   let { config, onSubmit } = $props<{
     config: ApiBlockConfig;
     onSubmit: (config: ApiBlockConfig) => void;
   }>();
+
+  const sheet = getContext('sheet');
   
   let formData = $state<ApiBlockConfig>({ 
     ...config,
@@ -47,7 +50,63 @@
   let selectedApisToDelete = $state<string[]>([]);
   let isOpen = $state(false);
   let authType = $state(config.authentication?.type || 'none');
+  let errorMessage = $state('');
   
+  function isDuplicateName(name: string, excludeId?: string): boolean {
+    return savedApis.some(api => api.name === name && api.id !== excludeId);
+  }
+
+  function isDuplicateConfig(config: Partial<ApiConfig>, excludeId?: string): boolean {
+    return savedApis.some(api => {
+      if (api.id === excludeId) return false;
+      
+      return (
+        api.endpoint === config.endpoint &&
+        api.method === config.method &&
+        JSON.stringify(api.headers) === JSON.stringify(config.headers) &&
+        api.body === config.body &&
+        JSON.stringify(api.queryParams) === JSON.stringify(config.queryParams) &&
+        api.timeout === config.timeout &&
+        JSON.stringify(api.retryConfig) === JSON.stringify(config.retryConfig) &&
+        JSON.stringify(api.authentication) === JSON.stringify(config.authentication) &&
+        api.responseType === config.responseType
+      );
+    });
+  }
+
+  function hasChanges(): boolean {
+    if (!selectedApiId) return true; // New API, always has changes
+    
+    const existingApi = savedApis.find(api => api.id === selectedApiId);
+    if (!existingApi) return true;
+
+    const currentConfig = {
+      name: formData.name,
+      endpoint: formData.url,
+      method: formData.method,
+      headers: formData.headers || {},
+      body: formData.body,
+      queryParams: formData.queryParams,
+      timeout: formData.timeout,
+      retryConfig: formData.retryConfig,
+      authentication: formData.authentication,
+      responseType: formData.responseType
+    };
+
+    return (
+      existingApi.name !== currentConfig.name ||
+      existingApi.endpoint !== currentConfig.endpoint ||
+      existingApi.method !== currentConfig.method ||
+      JSON.stringify(existingApi.headers) !== JSON.stringify(currentConfig.headers) ||
+      existingApi.body !== currentConfig.body ||
+      JSON.stringify(existingApi.queryParams) !== JSON.stringify(currentConfig.queryParams) ||
+      existingApi.timeout !== currentConfig.timeout ||
+      JSON.stringify(existingApi.retryConfig) !== JSON.stringify(currentConfig.retryConfig) ||
+      JSON.stringify(existingApi.authentication) !== JSON.stringify(currentConfig.authentication) ||
+      existingApi.responseType !== currentConfig.responseType
+    );
+  }
+
   onMount(() => {
     const unsubscribe = apiStore.subscribe(apis => {
       savedApis = apis;
@@ -122,12 +181,35 @@
 
   async function handleSubmit() {
     isSubmitting = true;
+    errorMessage = '';
+
     try {
+      if (!formData.name?.trim()) {
+        errorMessage = 'API name is required';
+        return;
+      }
+
+      // Check if there are any changes when editing
+      if (!hasChanges()) {
+        sheet?.setOpen(false);
+        return;
+      }
+
+      if (isDuplicateName(formData.name, selectedApiId)) {
+        sheet?.setOpen(false);
+        return;
+      }
+
+      if (isDuplicateConfig(formData, selectedApiId)) {
+        errorMessage = 'An identical API configuration already exists';
+        return;
+      }
+
       const apiConfig: Omit<ApiConfig, 'id' | 'createdAt' | 'updatedAt'> = {
-        name: formData.name || 'Untitled API',
+        name: formData.name,
         endpoint: formData.url,
         method: formData.method,
-        headers: formData.headers,
+        headers: formData.headers || {},
         body: formData.body,
         queryParams: formData.queryParams,
         timeout: formData.timeout,
@@ -136,16 +218,16 @@
         responseType: formData.responseType
       };
 
-      if (isEditing && selectedApiId) {
-        await apiStore.update(selectedApiId, apiConfig);
-        isEditing = false;
+      if (selectedApiId) {
+        apiStore.update(selectedApiId, apiConfig);
       } else {
-        await apiStore.add(apiConfig);
+        apiStore.add(apiConfig);
       }
-      selectedApiId = '';
+
       onSubmit(formData);
     } catch (error) {
-      console.error('Error saving API config:', error);
+      console.error('Error saving API:', error);
+      errorMessage = 'Failed to save API configuration';
     } finally {
       isSubmitting = false;
     }
@@ -194,6 +276,9 @@
   class="space-y-4 h-full overflow-y-auto pr-4"
   on:submit|preventDefault={handleSubmit}
 >
+  {#if errorMessage}
+    <div class="text-red-500 text-sm font-medium p-2 bg-red-50 rounded-md">{errorMessage}</div>
+  {/if}
   {#if savedApis.length > 0}
     <SavedApisList
       {savedApis}
@@ -246,7 +331,7 @@
     {formData} 
     {updateCurlCommand} 
   />
-    <HeadersForm {formData} {updateCurlCommand} />
+  <HeadersForm {formData} {updateCurlCommand} />
   <AuthenticationForm {formData} {authType} {updateCurlCommand} />
 
   <Button

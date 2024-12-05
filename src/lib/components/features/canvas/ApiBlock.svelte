@@ -13,8 +13,9 @@
   import ApiConfigForm from './ApiConfigForm.svelte';
   import ApiLogsDialog from "./ApiLogsDialog.svelte";
   import { apiStore } from '$lib/stores/api';
-		import type { Block } from '$lib/types/block';
-	import type { ApiBlockConfig } from '$lib/types/apiBlockConfig';
+  import { setContext } from 'svelte';
+  import type { Block } from '$lib/types/block';
+  import type { ApiBlockConfig } from '$lib/types/apiBlockConfig';
 
   let { 
     block, 
@@ -38,6 +39,10 @@
   // Subscribe to the API store
   apiStore.subscribe(apis => {
     savedApis = apis;
+  });
+
+  setContext('sheet', {
+    setOpen: (value: boolean) => showConfigModal = value
   });
 
   async function handleExecute() {
